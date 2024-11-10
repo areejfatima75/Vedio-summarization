@@ -2,14 +2,17 @@ import re
 import streamlit as st
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api.formatters import TextFormatter
-import torch
 from transformers import pipeline
 
-# Load the summarization model
-text_summary = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6", torch_dtype=torch.bfloat16)
+# Load and cache the summarization model
+@st.cache_resource
+def load_summarization_model():
+    return pipeline("summarization", model="sshleifer/distilbart-cnn-12-6")
 
-def summary(input):
-    output = text_summary(input)
+text_summary = load_summarization_model()
+
+def summary(input_text):
+    output = text_summary(input_text)
     return output[0]['summary_text']
 
 def extract_video_id(url):
@@ -23,20 +26,20 @@ def extract_video_id(url):
 def get_youtube_transcript(video_url):
     video_id = extract_video_id(video_url)
     if not video_id:
-        return "Video ID could not be extracted."
+        return "Video ID could not be extracted. Please check the URL and try again."
 
     try:
         # Fetch the transcript
         transcript = YouTubeTranscriptApi.get_transcript(video_id)
-
         # Format the transcript into plain text
         formatter = TextFormatter()
         text_transcript = formatter.format_transcript(transcript)
+        
+        # Summarize the transcript
         summary_text = summary(text_transcript)
-
         return summary_text
     except Exception as e:
-        return f"An error occurred: {e}"
+        return f"An error occurred while fetching the transcript or summarizing: {e}"
 
 # Streamlit UI
 st.title("@GenAILearniverse Project 2: YouTube Script Summarizer")
