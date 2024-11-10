@@ -12,8 +12,14 @@ def load_summarization_model():
 text_summary = load_summarization_model()
 
 def summary(input_text):
-    output = text_summary(input_text)
-    return output[0]['summary_text']
+    try:
+        output = text_summary(input_text)
+        if output and 'summary_text' in output[0]:
+            return output[0]['summary_text']
+        else:
+            return "Summarization model returned an empty response."
+    except Exception as e:
+        return f"An error occurred during summarization: {e}"
 
 def extract_video_id(url):
     # Regex to extract the video ID from various YouTube URL formats
